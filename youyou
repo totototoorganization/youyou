@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dart Challenge</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #101820, #263238);
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    user-select: none;
+}
+
+h1 {
+    margin: 15px 0 5px;
+    font-size: 34px;
+}
+
+#infos {
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+    flex-wrap: wrap;
+    font-size: 20px;
+    margin: 10px;
+}
+
+.info {
+    background: #17232c;
+    padding: 10px 18px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px #0008;
+}
+
+#game {
+    position: relative;
+    width: min(95vw, 1000px);
+    height: min(72vh, 650px);
+    margin: 15px auto;
+    border: 4px solid white;
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at center, #263238, #111 75%);
+    overflow: hidden;
+    cursor: crosshair;
+}
+
+/* CIBLE */
+
+#target {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: crosshair;
+    transition: left .12s linear, top .12s linear;
+    box-shadow: 0 0 25px #000;
+}
+
+.circle {
+    position: absolute;
+    border-radius: 50%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 3px solid white;
+}
+
+.c1 {
+    width: 180px;
+    height: 180px;
+    background: #e53935;
+}
+
+.c2 {
+    width: 145px;
+    height: 145px;
+    background: white;
+}
+
+.c3 {
+    width: 112px;
+    height: 112px;
+    background: #e53935;
+}
+
+.c4 {
+    width: 78px;
+    height: 78px;
+    background: white;
+}
+
+.c5 {
+    width: 45px;
+    height: 45px;
+    background: #e53935;
+}
+
+#center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 17px;
+    z-index: 5;
+}
+
+/* Fléchette */
+
+.dart {
+    position: absolute;
+    width: 65px;
+    height: 5px;
+    background: #ddd;
+    border-radius: 5px;
+    transform-origin: left center;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.dart::before {
+    content: "";
+    position: absolute;
+    right: -12px;
+    top: -6px;
+    border-left: 14px solid #aaa;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+}
+
+.dart::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -5px;
+    width: 14px;
+    height: 15px;
+    background: #42a5f5;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+#message {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: #000c;
+    padding: 25px 35px;
+    border-radius: 18px;
+    font-size: 28px;
+    font-weight: bold;
+    display: none;
+    z-index: 100;
+}
+
+#startBtn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 12px;
+    background: #43a047;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#startBtn:hover {
+    background: #66bb6a;
+}
+
+#instructions {
+    font-size: 17px;
+    color: #ddd;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎯 DART CHALLENGE</h1>
+
+<div id="infos">
+    <div class="info">Score : <span id="score">0</span></div>
+    <div class="info">Ratés : <span id="misses">0</span> / 3</div>
+    <div class="info">Manche : <span id="round">1</span></div>
+</div>
+
+<div id="instructions">
+    Clique sur la cible pour lancer ta fléchette !
+</div>
+
+<div id="game">
+
+    <div id="target">
+        <div class="circle c1"></div>
+        <div class="circle c2"></div>
+        <div class="circle c3"></div>
+        <div class="circle c4"></div>
+        <div class="circle c5"></div>
+        <div id="center">10</div>
+    </div>
+
+    <div id="message"></div>
+
+</div>
+
+<button id="startBtn">▶ Commencer</button>
+
+<script>
+
+const game = document.getElementById("game");
+const target = document.getElementById("target");
+
+const scoreText = document.getElementById("score");
+const missesText = document.getElementById("misses");
+const roundText = document.getElementById("round");
+const message = document.getElementById("message");
+const startBtn = document.getElementById("startBtn");
+
+let score = 0;
+let misses = 0;
+let round = 1;
+let playing = false;
+let targetX = 0;
+let targetY = 0;
+
+const targetSize = 180;
+
+
+/* -------------------------
+   DÉMARRAGE
+------------------------- */
+
+startBtn.addEventListener("click", startGame);
+
+function startGame() {
+
+    score = 0;
+    misses = 0;
+    round = 1;
+
+    scoreText.textContent = score;
+    missesText.textContent = misses;
+    roundText.textContent = round;
+
+    playing = true;
+
+    message.style.display = "none";
+    startBtn.style.display = "none";
+
+    moveTarget();
+}
+
+
+/* -------------------------
+   FAIRE BOUGER LA CIBLE
+------------------------- */
+
+function moveTarget() {
+
+    if (!playing) return;
+
+    const maxX = game.clientWidth - targetSize / 2;
+    const maxY = game.clientHeight - targetSize / 2;
+
+    const minX = targetSize / 2;
+    const minY = targetSize / 2;
+
+    targetX =
+        minX + Math.random() * (maxX - minX);
+
+    targetY =
+        minY + Math.random() * (maxY - minY);
+
+    target.style.left = targetX + "px";
+    target.style.top = targetY + "px";
+}
+
+
+/* -------------------------
+   CIBLE QUI BOUGE
+------------------------- */
+
+let moveInterval;
+
+function startMovement() {
+
+    clearInterval(moveInterval);
+
+    moveInterval = setInterval(() => {
+
+        if (playing) {
+            moveTarget();
+        }
+
+    }, 700);
+}
+
+
+/* -------------------------
+   CLIQUER SUR LA CIBLE
+------------------------- */
+
+target.addEventListener("click", function(e) {
+
+    if (!playing) return;
+
+    e.stopPropagation();
+
+    const rect = target.getBoundingClientRect();
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const centerX = targetSize / 2;
+    const centerY = targetSize / 2;
+
+    const distance = Math.sqrt(
+        Math.pow(x - centerX, 2) +
+        Math.pow(y - centerY, 2)
+    );
+
+    let points = 0;
+
+    /*
+       Zones :
+
+       0-22 px = 10
+       22-39 = 8
+       39-56 = 6
+       56-72 = 4
+       72-90 = 2
+    */
+
+    if (distance <= 22) {
+        points = 10;
+    }
+    else if (distance <= 39) {
+        points = 8;
+    }
+    else if (distance <= 56) {
+        points = 6;
+    }
+    else if (distance <= 72) {
+        points = 4;
+    }
+    else if (distance <= 90) {
+        points = 2;
+    }
+
+    if (points > 0) {
+
+        score += points;
+
+        scoreText.textContent = score;
+
+        showHit(points);
+
+        round++;
+
+        roundText.textContent = round;
+
+        setTimeout(() => {
+            moveTarget();
+        }, 150);
+
+    }
+});
+
+
+/* -------------------------
+   CLIQUER À CÔTÉ
+------------------------- */
+
+game.addEventListener("click", function(e) {
+
+    if (!playing) return;
+
+    if (e.target === target ||
+        target.contains(e.target)) {
+        return;
+    }
+
+    misses++;
+
+    missesText.textContent = misses;
+
+    showMiss();
+
+    if (misses >= 3) {
+        eliminate();
+    }
+});
+
+
+/* -------------------------
+   AFFICHER RÉUSSITE
+------------------------- */
+
+function showHit(points) {
+
+    message.textContent = "+" + points + " points ! 🎯";
+
+    message.style.display = "block";
+
+    message.style.background = "#1b5e20";
+
+    setTimeout(() => {
+
+        if (playing) {
+            message.style.display = "none";
+        }
+
+    }, 500);
+}
+
+
+/* -------------------------
+   AFFICHER RATÉ
+------------------------- */
+
+function showMiss() {
+
+    message.textContent =
+        "❌ RATÉ ! " +
+        misses +
+        "/3";
+
+    message.style.display = "block";
+
+    message.style.background = "#b71c1c";
+
+    setTimeout(() => {
+
+        if (playing) {
+            message.style.display = "none";
+        }
+
+    }, 500);
+}
+
+
+/* -------------------------
+   ÉLIMINATION
+------------------------- */
+
+function eliminate() {
+
+    playing = false;
+
+    clearInterval(moveInterval);
+
+    message.innerHTML =
+        "💥 ÉLIMINÉ !<br>" +
+        "<span style='font-size:20px'>" +
+        "Score final : " + score +
+        "</span>";
+
+    message.style.display = "block";
+    message.style.background = "#212121";
+
+    startBtn.textContent = "🔄 Recommencer";
+    startBtn.style.display = "inline-block";
+}
+
+
+/* -------------------------
+   REDIMENSIONNEMENT
+------------------------- */
+
+window.addEventListener("resize", () => {
+
+    if (playing) {
+        moveTarget();
+    }
+
+});
+
+
+/* Lancer le mouvement */
+
+startMovement();
+
+</script>
+
+</body>
+</html>
